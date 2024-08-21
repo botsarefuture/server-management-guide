@@ -3,73 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How to Generate a DKIM Key</title>
+    <title>DKIM Setup Guide for iRedMail</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+        }
+        header, footer {
             background-color: #f4f4f4;
-            color: #333;
+            padding: 1rem;
+            text-align: center;
         }
-        h1 {
-            color: #444;
+        nav {
+            width: 200px;
+            float: left;
+            background: #333;
+            color: #fff;
+            padding: 1rem;
+            height: 100vh;
         }
-        p {
-            margin-bottom: 15px;
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            padding: 0.5rem 0;
+        }
+        nav a:hover {
+            background: #575757;
+        }
+        main {
+            margin-left: 220px;
+            padding: 2rem;
         }
         .code {
-            background-color: #282c34;
-            color: #61dafb;
-            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            font-family: "Courier New", Courier, monospace;
-            display: block;
-            margin-bottom: 15px;
+            padding: 1rem;
             overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        footer {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .note {
+            background-color: #fffcf0;
+            border-left: 4px solid #f0ad4e;
+            padding: 1rem;
+            margin: 1rem 0;
         }
     </style>
 </head>
 <body>
+    <header>
+        <h1>DKIM Setup Guide for iRedMail</h1>
+    </header>
+    <nav>
+        <a href="#use-existing-dkim">Use Existing DKIM Key</a>
+        <a href="#generate-new-dkim">Generate New DKIM Key</a>
+        <a href="#single-dkim-key">Use One DKIM Key for All Domains</a>
+        <a href="#references">References</a>
+    </nav>
+    <main>
+        <h2 id="use-existing-dkim">Use Existing DKIM Key for New Mail Domain</h2>
+        <p>If you already have a working DKIM setup and a valid DKIM DNS record, you can use the existing DKIM key for new mail domains. This avoids the need for the domain owner to add a new DKIM DNS record.</p>
+        
+        <h3>Steps:</h3>
+        <ol>
+            <li><strong>Locate and Edit Amavisd Configuration:</strong></li>
+            <div class="code">
+                sudo nano /etc/amavisd/amavisd.conf
+            </div>
+            <li><strong>Add DKIM Key for the New Domain:</strong></li>
+            <div class="code">
+                dkim_key('mydomain.com', "dkim", "/var/lib/dkim/mydomain.com.pem");<br>
+                dkim_key('new_domain.com', "dkim", "/var/lib/dkim/mydomain.com.pem");
+            </div>
+            <li><strong>Update DKIM Signature Options:</strong></li>
+            <div class="code">
+                @dkim_signature_options_bysender_maps = ( {<br>
+                    ...<br>
+                    "mydomain.com"  => { d => "mydomain.com", a => 'rsa-sha256', ttl => 10*24*3600 },<br>
+                    "new_domain.com"  => { d => "mydomain.com", a => 'rsa-sha256', ttl => 10*24*3600 },<br>
+                    ...<br>
+                });
+            </div>
+            <li><strong>Restart Amavisd Service:</strong></li>
+            <div class="code">
+                sudo systemctl restart amavisd
+            </div>
+            <li><strong>Test DKIM Signing:</strong></li>
+            <div class="code">
+                sudo amavisd testkeys
+            </div>
+            <p>Both domains should show a "pass".</p>
+        </ol>
 
-    <h1>How to Generate a DKIM Key</h1>
+        <h2 id="generate-new-dkim">Generate New DKIM Key for New Mail Domain</h2>
+        <p>If you prefer to use a separate DKIM key for the new domain, follow these steps to generate and configure it.</p>
 
-    <p><strong>1. Install Required Tools:</strong></p>
-    <p>You’ll need OpenSSL or a similar tool for generating the keys. On most Linux systems, OpenSSL is pre-installed.</p>
+        <h3>Steps:</h3>
+        <ol>
+            <li><strong>Generate the DKIM Key:</strong></li>
+            <div class="code">
+                # RHEL/CentOS:<br>
+                amavisd -c /etc/amavisd/amavisd.conf genrsa /var/lib/dkim/new_domain.com.pem 1024<br><br>
+                # Debian/Ubuntu:<br>
+                amavisd-new genrsa /var/lib/dkim/new_domain.com.pem 1024<br><br>
+                # FreeBSD:<br>
+                amavisd genrsa /var/lib/dkim/new_domain.com.pem 1024<br><br>
+                # OpenBSD:<br>
+                amavisd genrsa /var/lib/dkim/new_domain.com.pem 1024
+            </div>
+            <li><strong>Set File Permissions:</strong></li>
+            <div class="code">
+                sudo chown amavis:amavis /var/lib/dkim/new_domain.com.pem<br>
+                sudo chmod 0400 /var/lib/dkim/new_domain.com.pem
+            </div>
+            <li><strong>Update Amavisd Configuration:</strong></li>
+            <div class="code">
+                dkim_key('mydomain.com', "dkim", "/var/lib/dkim/mydomain.com.pem");<br>
+                dkim_key('new_domain.com', "dkim", "/var/lib/dkim/new_domain.com.pem");
+            </div>
+            <div class="code">
+                @dkim_signature_options_bysender_maps = ( {<br>
+                    ...<br>
+                    "mydomain.com"  => { d => "mydomain.com", a => 'rsa-sha256', ttl => 10*24*3600 },<br>
+                    "new_domain.com"  => { d => "new_domain.com", a => 'rsa-sha256', ttl => 10*24*3600 },<br>
+                    ...<br>
+                });
+            </div>
+            <li><strong>Restart Amavisd Service:</strong></li>
+            <div class="code">
+                sudo systemctl restart amavisd
+            </div>
+            <li><strong>Add DKIM DNS Record:</strong></li>
+            <p>The DNS record can be found in the <code>default.txt</code> file generated along with your DKIM key. Add this TXT record to your DNS settings.</p>
+            <li><strong>Verify DKIM DNS Record:</strong></li>
+            <div class="code">
+                sudo amavisd-new showkeys<br>
+                sudo amavisd-new testkeys
+            </div>
+            <p>DNS caching may delay verification. Retry if necessary.</p>
+        </ol>
 
-    <p><strong>2. Generate the Private and Public Keys:</strong></p>
-    <p>Open your terminal and execute the following command to generate a 2048-bit DKIM key pair:</p>
-    <div class="code">
-        openssl genrsa -out private.key 2048
-    </div>
-    <p>Extract the public key from the private key:</p>
-    <div class="code">
-        openssl rsa -in private.key -pubout -out public.key
-    </div>
+        <h2 id="single-dkim-key">Use One DKIM Key for All Mail Domains</h2>
+        <p>If you want to use a single DKIM key for all domains, follow these steps:</p>
 
-    <p><strong>3. Format the Public Key for DNS:</strong></p>
-    <p>Open the <span class="code">public.key</span> file and remove the <span class="code">-----BEGIN PUBLIC KEY-----</span> and <span class="code">-----END PUBLIC KEY-----</span> lines.</p>
-    <p>Also, remove any line breaks so that the key is a single continuous string.</p>
+        <h3>Steps:</h3>
+        <ol>
+            <li><strong>Configure DKIM Key in Amavisd:</strong></li>
+            <div class="code">
+                dkim_key('mydomain.com', "dkim", "/var/lib/dkim/mydomain.com.pem");
+            </div>
+            <li><strong>Set DKIM Signature Options:</strong></li>
+            <div class="code">
+                @dkim_signature_options_bysender_maps = ({<br>
+                    # catch-all (one dkim key for all domains)<br>
+                    '.' => { d => 'mydomain.com',<br>
+                             a => 'rsa-sha256',<br>
+                             c => 'relaxed/simple',<br>
+                             ttl => 30*24*3600 },<br>
+                });
+            </div>
+            <li><strong>Restart Amavisd Service:</strong></li>
+            <div class="code">
+                sudo systemctl restart amavisd
+            </div>
+        </ol>
 
-    <p><strong>4. Create a DKIM TXT Record:</strong></p>
-    <p>Log in to your domain’s DNS management console.</p>
-    <p>Create a new TXT record with the following format:</p>
-    <p><strong>Name:</strong> <span class="code">selector._domainkey.yourdomain.com</span> (replace <em>selector</em> with your DKIM selector, and <em>yourdomain.com</em> with your domain name).</p>
-    <p><strong>Type:</strong> TXT</p>
-    <p><strong>Value:</strong> <span class="code">v=DKIM1; k=rsa; p=YOUR_PUBLIC_KEY</span> (replace <em>YOUR_PUBLIC_KEY</em> with the formatted public key).</p>
-
-    <p><strong>5. Configure Your Mail Server:</strong></p>
-    <p>Depending on your mail server (e.g., Postfix, Exim, etc.), you need to specify the DKIM selector and the path to the private key.</p>
-    <p>Example for Postfix with OpenDKIM:</p>
-    <div class="code">
-        Domain yourdomain.com<br>
-        Selector selector<br>
-        KeyFile /path/to/private.key
-    </div>
-    <p>Ensure Postfix is configured to use OpenDKIM for outbound emails.</p>
-
-    <p><strong>6. Test Your DKIM Setup:</strong></p>
-    <p>Send a test email to a service like <a href="https://www.mail-tester.com/">Mail-tester</a> or <a href="https://www.appmaildev.com/en/dkim/">DKIM Validator</a> to ensure your DKIM is correctly configured.</p>
-
+        <h2 id="references">References</h2>
+        <ul>
+            <li><a href="https://www.amavis.org/">Amavisd Official Documentation: Setting Up DKIM Mail Signing and Verification</a></li>
+            <li><a href="https://github.com/iredmail/">iRedMail GitHub Repository</a></li>
+        </ul>
+        <footer>
+            <p>All documents are available in the GitHub repository and published under a Creative Commons license. Download the latest version for offline reading. If you find any issues, please contact us for corrections.</p>
+        </footer>
+    </main>
 </body>
 </html>
