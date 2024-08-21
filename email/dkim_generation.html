@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Generate a DKIM Key</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            color: #444;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .code {
+            background-color: #282c34;
+            color: #61dafb;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: "Courier New", Courier, monospace;
+            display: block;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>How to Generate a DKIM Key</h1>
+
+    <p><strong>1. Install Required Tools:</strong></p>
+    <p>You’ll need OpenSSL or a similar tool for generating the keys. On most Linux systems, OpenSSL is pre-installed.</p>
+
+    <p><strong>2. Generate the Private and Public Keys:</strong></p>
+    <p>Open your terminal and execute the following command to generate a 2048-bit DKIM key pair:</p>
+    <div class="code">
+        openssl genrsa -out private.key 2048
+    </div>
+    <p>Extract the public key from the private key:</p>
+    <div class="code">
+        openssl rsa -in private.key -pubout -out public.key
+    </div>
+
+    <p><strong>3. Format the Public Key for DNS:</strong></p>
+    <p>Open the <span class="code">public.key</span> file and remove the <span class="code">-----BEGIN PUBLIC KEY-----</span> and <span class="code">-----END PUBLIC KEY-----</span> lines.</p>
+    <p>Also, remove any line breaks so that the key is a single continuous string.</p>
+
+    <p><strong>4. Create a DKIM TXT Record:</strong></p>
+    <p>Log in to your domain’s DNS management console.</p>
+    <p>Create a new TXT record with the following format:</p>
+    <p><strong>Name:</strong> <span class="code">selector._domainkey.yourdomain.com</span> (replace <em>selector</em> with your DKIM selector, and <em>yourdomain.com</em> with your domain name).</p>
+    <p><strong>Type:</strong> TXT</p>
+    <p><strong>Value:</strong> <span class="code">v=DKIM1; k=rsa; p=YOUR_PUBLIC_KEY</span> (replace <em>YOUR_PUBLIC_KEY</em> with the formatted public key).</p>
+
+    <p><strong>5. Configure Your Mail Server:</strong></p>
+    <p>Depending on your mail server (e.g., Postfix, Exim, etc.), you need to specify the DKIM selector and the path to the private key.</p>
+    <p>Example for Postfix with OpenDKIM:</p>
+    <div class="code">
+        Domain yourdomain.com<br>
+        Selector selector<br>
+        KeyFile /path/to/private.key
+    </div>
+    <p>Ensure Postfix is configured to use OpenDKIM for outbound emails.</p>
+
+    <p><strong>6. Test Your DKIM Setup:</strong></p>
+    <p>Send a test email to a service like <a href="https://www.mail-tester.com/">Mail-tester</a> or <a href="https://www.appmaildev.com/en/dkim/">DKIM Validator</a> to ensure your DKIM is correctly configured.</p>
+
+</body>
+</html>
