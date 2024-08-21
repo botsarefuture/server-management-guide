@@ -8,12 +8,13 @@
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            margin: 0;
-            padding: 0;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
         }
         header, footer {
-            background-color: #f4f4f4;
-            padding: 1rem;
+            background-color: #e2e2e2;
+            padding: 10px;
             text-align: center;
         }
         nav {
@@ -21,43 +22,48 @@
             float: left;
             background: #333;
             color: #fff;
-            padding: 1rem;
+            padding: 10px;
             height: 100vh;
         }
         nav a {
             color: #fff;
             text-decoration: none;
             display: block;
-            padding: 0.5rem 0;
+            padding: 8px 0;
         }
         nav a:hover {
             background: #575757;
         }
         main {
             margin-left: 220px;
-            padding: 2rem;
-        }
-        .code {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 1rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            font-family: monospace;
+            padding: 20px;
         }
         h1, h2, h3 {
-            color: #333;
+            color: #444;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .code {
+            background-color: #282c34;
+            color: #61dafb;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: "Courier New", Courier, monospace;
+            display: block;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffeeba;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
         }
         footer {
             font-size: 0.8rem;
             color: #666;
-        }
-        .note {
-            background-color: #fffcf0;
-            border-left: 4px solid #f0ad4e;
-            padding: 1rem;
-            margin: 1rem 0;
         }
     </style>
 </head>
@@ -73,8 +79,8 @@
     </nav>
     <main>
         <h2 id="use-existing-dkim">Use Existing DKIM Key for New Mail Domain</h2>
-        <p>If you already have a working DKIM setup and a valid DKIM DNS record, you can use the existing DKIM key for new mail domains. This avoids the need for the domain owner to add a new DKIM DNS record.</p>
-        
+        <p>If you already have a DKIM setup and a valid DKIM DNS record, you can use the existing DKIM key for new mail domains. This way, you won’t need the domain owner to add a new DKIM DNS record.</p>
+
         <h3>Steps:</h3>
         <ol>
             <li><strong>Locate and Edit Amavisd Configuration:</strong></li>
@@ -103,7 +109,7 @@
             <div class="code">
                 sudo amavisd testkeys
             </div>
-            <p>Both domains should show a "pass".</p>
+            <p>Both domains should display a "pass".</p>
         </ol>
 
         <h2 id="generate-new-dkim">Generate New DKIM Key for New Mail Domain</h2>
@@ -145,17 +151,17 @@
                 sudo systemctl restart amavisd
             </div>
             <li><strong>Add DKIM DNS Record:</strong></li>
-            <p>The DNS record can be found in the <code>default.txt</code> file generated along with your DKIM key. Add this TXT record to your DNS settings.</p>
+            <p>The DKIM TXT record can be found in the <code>default.txt</code> file generated with your DKIM key. Add this TXT record to your DNS settings.</p>
             <li><strong>Verify DKIM DNS Record:</strong></li>
             <div class="code">
                 sudo amavisd-new showkeys<br>
                 sudo amavisd-new testkeys
             </div>
-            <p>DNS caching may delay verification. Retry if necessary.</p>
+            <p>DNS caching might delay verification. Retry if necessary.</p>
         </ol>
 
         <h2 id="single-dkim-key">Use One DKIM Key for All Mail Domains</h2>
-        <p>If you want to use a single DKIM key for all domains, follow these steps:</p>
+        <p>If you want to use a single DKIM key for all mail domains, follow these steps:</p>
 
         <h3>Steps:</h3>
         <ol>
@@ -166,7 +172,7 @@
             <li><strong>Set DKIM Signature Options:</strong></li>
             <div class="code">
                 @dkim_signature_options_bysender_maps = ({<br>
-                    # catch-all (one dkim key for all domains)<br>
+                    # catch-all (one DKIM key for all domains)<br>
                     '.' => { d => 'mydomain.com',<br>
                              a => 'rsa-sha256',<br>
                              c => 'relaxed/simple',<br>
@@ -184,9 +190,9 @@
             <li><a href="https://www.amavis.org/">Amavisd Official Documentation: Setting Up DKIM Mail Signing and Verification</a></li>
             <li><a href="https://github.com/iredmail/">iRedMail GitHub Repository</a></li>
         </ul>
-        <footer>
-            <p>All documents are available in the GitHub repository and published under a Creative Commons license. Download the latest version for offline reading. If you find any issues, please contact us for corrections.</p>
-        </footer>
     </main>
+    <footer>
+        <p>All documents are available in the GitHub repository and published under a Creative Commons license. Download the latest version for offline reading. If you find any issues, please contact us for corrections.</p>
+    </footer>
 </body>
 </html>
