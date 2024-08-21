@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Management Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+        }
+        nav {
+            background-color: #444;
+            color: #fff;
+            width: 200px;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            padding: 10px 15px;
+            background-color: #555;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        nav a:hover {
+            background-color: #666;
+            box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.3);
+        }
+        .breadcrumb {
+            background-color: #e9ecef;
+            padding: 10px;
+            margin-left: 220px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .breadcrumb a {
+            color: #007bff;
+            text-decoration: none;
+            margin-right: 5px;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            flex: 1;
+        }
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            margin-top: auto;
+        }
+        .code {
+            background-color: #282c34;
+            color: #61dafb;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: "Courier New", Courier, monospace;
+            display: block;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Server Management Guide</h1>
+    </header>
+
+    <nav>
+        <h2>Contents</h2>
+        <a href="#introduction">Introduction</a>
+        <a href="#setup">Server Setup</a>
+        <a href="#security">Security Best Practices</a>
+        <a href="#dkim">DKIM Configuration</a>
+        <a href="#flask-gunicorn">Flask with Gunicorn</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+        <a href="#conclusion">Conclusion</a>
+    </nav>
+
+    <div class="breadcrumb">
+        <a href="#">Home</a> &gt; <a href="#">Server Management Guide</a> &gt; <a href="#flask-gunicorn">Flask with Gunicorn</a>
+    </div>
+
+    <div class="content">
+        <h2 id="flask-gunicorn">Setting Up Flask with Gunicorn</h2>
+        <p>This guide will walk you through the process of setting up a Flask application and serving it using Gunicorn, a Python WSGI HTTP Server.</p>
+
+        <h3>1. Install Flask and Gunicorn</h3>
+        <p>First, you'll need to install Flask and Gunicorn. You can do this using pip:</p>
+        <div class="code">
+            pip install flask gunicorn
+        </div>
+
+        <h3>2. Create a Simple Flask Application</h3>
+        <p>Create a simple Flask application in a file named <code>app.py</code>:</p>
+        <div class="code">
+            from flask import Flask, jsonify
+
+            app = Flask(__name__)
+
+            @app.route("/")
+            def hello():
+                return jsonify(message="Hello, World!")
+
+            if __name__ == "__main__":
+                app.run()
+        </div>
+
+        <h3>3. Test the Flask Application</h3>
+        <p>Run the Flask application locally to make sure everything is working:</p>
+        <div class="code">
+            python app.py
+        </div>
+        <p>Visit <code>http://127.0.0.1:5000/</code> in your browser to see the "Hello, World!" message.</p>
+
+        <h3>4. Run the Flask Application with Gunicorn</h3>
+        <p>Now that the Flask application is ready, you can run it with Gunicorn:</p>
+        <div class="code">
+            gunicorn --bind 0.0.0.0:8000 app:app
+        </div>
+        <p>This command tells Gunicorn to serve your Flask app on port 8000.</p>
+
+        <h3>5. Set Up Gunicorn as a Systemd Service (Optional)</h3>
+        <p>To run Gunicorn as a background service and start it automatically on boot, you can create a systemd service file:</p>
+        <div class="code">
+            [Unit]
+            Description=Gunicorn instance to serve Flask application
+            After=network.target
+
+            [Service]
+            User=yourusername
+            Group=www-data
+            WorkingDirectory=/path/to/your/app
+            ExecStart=/usr/local/bin/gunicorn --workers 3 --bind unix:app.sock -m 007 wsgi:app
+
+            [Install]
+            WantedBy=multi-user.target
+        </div>
+        <p>Save this file as <code>/etc/systemd/system/gunicorn.service</code> and then start the service:</p>
+        <div class="code">
+            sudo systemctl start gunicorn
+            sudo systemctl enable gunicorn
+        </div>
+
+        <h3>6. Configure Nginx (Optional)</h3>
+        <p>To serve your Flask application through a web server, you can use Nginx. Create an Nginx server block that points to the Gunicorn socket:</p>
+        <div class="code">
+            server {
+                listen 80;
+                server_name your_domain_or_IP;
+
+                location / {
+                    proxy_pass http://unix:/path/to/your/app/app.sock;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
+        </div>
+        <p>Reload Nginx to apply the changes:</p>
+        <div class="code">
+            sudo systemctl restart nginx
+        </div>
+        <p>Now your Flask application should be accessible via your domain or IP address.</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Server Management Guide. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
