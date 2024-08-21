@@ -74,7 +74,7 @@
             padding: 10px;
             margin-top: auto;
         }
-        .code {
+        pre {
             background-color: #282c34;
             color: #61dafb;
             padding: 10px;
@@ -113,81 +113,65 @@
 
         <h3>1. Install Flask and Gunicorn</h3>
         <p>First, you'll need to install Flask and Gunicorn. You can do this using pip:</p>
-        <div class="code">
-            pip install flask gunicorn
-        </div>
+        <pre>pip install flask gunicorn</pre>
 
         <h3>2. Create a Simple Flask Application</h3>
         <p>Create a simple Flask application in a file named <code>app.py</code>:</p>
-        <div class="code">
-            from flask import Flask, jsonify
+        <pre>from flask import Flask, jsonify
 
-            app = Flask(__name__)
+app = Flask(__name__)
 
-            @app.route("/")
-            def hello():
-                return jsonify(message="Hello, World!")
+@app.route("/")
+def hello():
+    return jsonify(message="Hello, World!")
 
-            if __name__ == "__main__":
-                app.run()
-        </div>
+if __name__ == "__main__":
+    app.run()</pre>
 
         <h3>3. Test the Flask Application</h3>
         <p>Run the Flask application locally to make sure everything is working:</p>
-        <div class="code">
-            python app.py
-        </div>
+        <pre>python app.py</pre>
         <p>Visit <code>http://127.0.0.1:5000/</code> in your browser to see the "Hello, World!" message.</p>
 
         <h3>4. Run the Flask Application with Gunicorn</h3>
         <p>Now that the Flask application is ready, you can run it with Gunicorn:</p>
-        <div class="code">
-            gunicorn --bind 0.0.0.0:8000 app:app
-        </div>
+        <pre>gunicorn --bind 0.0.0.0:8000 app:app</pre>
         <p>This command tells Gunicorn to serve your Flask app on port 8000.</p>
 
         <h3>5. Set Up Gunicorn as a Systemd Service (Optional)</h3>
         <p>To run Gunicorn as a background service and start it automatically on boot, you can create a systemd service file:</p>
-        <div class="code">
-            [Unit]
-            Description=Gunicorn instance to serve Flask application
-            After=network.target
+        <pre>[Unit]
+Description=Gunicorn instance to serve Flask application
+After=network.target
 
-            [Service]
-            User=yourusername
-            Group=www-data
-            WorkingDirectory=/path/to/your/app
-            ExecStart=/usr/local/bin/gunicorn --workers 3 --bind unix:app.sock -m 007 wsgi:app
+[Service]
+User=yourusername
+Group=www-data
+WorkingDirectory=/path/to/your/app
+ExecStart=/usr/local/bin/gunicorn --workers 3 --bind unix:app.sock -m 007 wsgi:app
 
-            [Install]
-            WantedBy=multi-user.target
-        </div>
+[Install]
+WantedBy=multi-user.target</pre>
         <p>Save this file as <code>/etc/systemd/system/gunicorn.service</code> and then start the service:</p>
-        <div class="code">
-            sudo systemctl start gunicorn
-            sudo systemctl enable gunicorn
-        </div>
+        <pre>sudo systemctl start gunicorn
+sudo systemctl enable gunicorn</pre>
 
         <h3>6. Configure Nginx (Optional)</h3>
         <p>To serve your Flask application through a web server, you can use Nginx. Create an Nginx server block that points to the Gunicorn socket:</p>
-        <div class="code">
-            server {
-                listen 80;
-                server_name your_domain_or_IP;
+        <pre>server {
+    listen 80;
+    server_name your_domain_or_IP;
 
-                location / {
-                    proxy_pass http://unix:/path/to/your/app/app.sock;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                }
-            }
-        </div>
+    location / {
+        proxy_pass http://unix:/path/to/your/app/app.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</pre>
         <p>Reload Nginx to apply the changes:</p>
-        <div class="code">
-            sudo systemctl restart nginx
-        </div>
+        <pre>sudo systemctl restart nginx</pre>
         <p>Now your Flask application should be accessible via your domain or IP address.</p>
     </div>
 
